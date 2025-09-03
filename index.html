@@ -94,10 +94,15 @@ function randLetter() {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   return letters[Math.floor(Math.random() * letters.length)];
 }
-function setupBoard() {
-  elBoard.style.gridTemplateColumns = `repeat(${COLS}, 48px)`;
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) grid[r][c] = randLetter();
+function randLetter(){
+  // 모음 비중을 살짝 높인 가중치 가방
+  const bag = "EEEEEEAAA AAI IIOOOUU"  // 모음이 더 많이 들어감
+             + "NNNRRRTTTLLSS"        // 빈도 높은 자음
+             + "DGG" + "BCMP" + "FHVWY" + "K" + "JX" + "QZ";
+  const letters = bag.replace(/\s/g, '');
+  return letters[Math.floor(Math.random()*letters.length)];
 }
+
 function renderAll() {
   elBoard.innerHTML = '';
   for (let r = 0; r < ROWS; r++) {
@@ -298,4 +303,5 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
