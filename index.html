@@ -17,6 +17,12 @@
     .hud { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 12px; }
     .badge { background:var(--panel); padding:6px 10px; border-radius:999px; font-weight:700; }
     .msg { min-height:20px; opacity:.9; }
+    .tile.match {
+  background:#f59e0b;   /* 주황 강조 */
+  transform:scale(1.2);
+  transition:all .3s ease;
+}
+
   </style>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -222,13 +228,31 @@ function markSubstrings(r0, c0, dr, dc, letters, marks, onExample){
 }
 
 function clearMarked(marks){
-  let count = 0; const exampleWord = marks.exampleWord || '';
+  let count = 0; 
+  const exampleWord = marks.exampleWord || '';
+  
+  // 1) 먼저 DOM에 match 클래스 붙이기
   for (const key of marks) {
     const [r, c] = key.split(',').map(Number);
-    if (grid[r][c]) { grid[r][c] = ''; count++; }
+    const el = document.querySelector(`[data-r='${r}'][data-c='${c}']`);
+    if (el) el.classList.add('match');
   }
+  
+  // 2) 500ms 후 실제로 제거
+  setTimeout(() => {
+    for (const key of marks) {
+      const [r, c] = key.split(',').map(Number);
+      if (grid[r][c]) { 
+        grid[r][c] = ''; 
+        count++; 
+      }
+    }
+    renderAll();
+  }, 500);
+  
   return { count, exampleWord };
 }
+
 function applyGravity(){
   for (let c = 0; c < COLS; c++) {
     let write = ROWS - 1;
@@ -307,6 +331,7 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
 
 
