@@ -99,6 +99,13 @@ function randLetter(){
   const letters = bag.replace(/\s/g, '');
   return letters[Math.floor(Math.random()*letters.length)];
 }
+function setupBoard() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      grid[r][c] = randLetter();
+    }
+  }
+}
 
 function renderAll() {
   elBoard.innerHTML = '';
@@ -300,6 +307,7 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
 
 
