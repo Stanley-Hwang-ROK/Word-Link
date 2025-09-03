@@ -68,6 +68,7 @@ const COLORS = [
   "#facc15", // 금색
   "#38bdf8"  // 하늘
 ];
+let colorGrid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
 
 // 외부 words.txt에서 로드 (실패 시 FALLBACK_WORDS)
 let DICTIONARY = new Set();
@@ -126,9 +127,11 @@ function setupBoard() {
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       grid[r][c] = randLetter();
+      colorGrid[r][c] = COLORS[Math.floor(Math.random() * COLORS.length)];
     }
   }
 }
+
 
 function renderAll() {
   elBoard.innerHTML = '';
@@ -138,9 +141,7 @@ function renderAll() {
       d.className = 'tile';
       d.dataset.r = r; d.dataset.c = c;
       d.textContent = grid[r][c];
-      // 랜덤 색상 적용
-      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-      d.style.background = color;
+      d.style.background = colorGrid[r][c]; // ← 고정된 색
       elBoard.appendChild(d);
     }
   }
@@ -287,8 +288,16 @@ function applyGravity(){
   }
 }
 function refill(){
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!grid[r][c]) grid[r][c] = randLetter();
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (!grid[r][c]) {
+        grid[r][c] = randLetter();
+        colorGrid[r][c] = COLORS[Math.floor(Math.random() * COLORS.length)];
+      }
+    }
+  }
 }
+
 function shuffleBoard(){
   const arr = [];
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) arr.push(grid[r][c]);
