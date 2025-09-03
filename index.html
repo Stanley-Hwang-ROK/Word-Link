@@ -11,7 +11,14 @@
     body { margin:0; font-family: system-ui; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
     .wrap { margin:auto; width:min(95vw, 900px); }
     header { display:flex; align-items:center; justify-content:space-between; padding:12px 0; }
-    .board { display:grid; gap:6px; padding:10px; }
+    .board {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  grid-template-columns: repeat(8, 48px);  /* COLS 수(=8)에 맞춤 */
+  justify-content: center;                 /* 가운데 정렬 */
+}
+
     .tile { width:48px; height:48px; display:grid; place-items:center; border-radius:8px; background:var(--tile); color:#fff; font-weight:800; font-size:20px; user-select:none; border:1px solid #374151; transition:transform .08s ease; }
     .tile.sel { background:var(--tileSel); transform:scale(1.05); }
     .hud { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 12px; }
@@ -331,6 +338,7 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
 
 
