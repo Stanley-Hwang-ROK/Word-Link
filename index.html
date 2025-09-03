@@ -138,13 +138,14 @@ function renderAll() {
       d.className = 'tile';
       d.dataset.r = r; d.dataset.c = c;
       d.textContent = grid[r][c];
-      // 팔레트에서 색 고르기 (여기서는 보드 위치 기준)
-      const color = COLORS[(r * COLS + c) % COLORS.length];
+      // 랜덤 색상 적용
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
       d.style.background = color;
       elBoard.appendChild(d);
     }
   }
 }
+
 
 function bindUI() {
   elBoard.addEventListener('click', onClickTile);
@@ -355,6 +356,7 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
 
 
