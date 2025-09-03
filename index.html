@@ -58,6 +58,16 @@
    with external dictionary
    ========================= */
 const ROWS = 10, COLS = 8, MIN_WORD = 3, MAX_WORD = 6;
+const COLORS = [
+  "#f87171", // 빨강
+  "#fbbf24", // 노랑
+  "#34d399", // 초록
+  "#60a5fa", // 파랑
+  "#a78bfa", // 보라
+  "#f472b6", // 분홍
+  "#facc15", // 금색
+  "#38bdf8"  // 하늘
+];
 
 // 외부 words.txt에서 로드 (실패 시 FALLBACK_WORDS)
 let DICTIONARY = new Set();
@@ -128,10 +138,14 @@ function renderAll() {
       d.className = 'tile';
       d.dataset.r = r; d.dataset.c = c;
       d.textContent = grid[r][c];
+      // 팔레트에서 색 고르기 (여기서는 보드 위치 기준)
+      const color = COLORS[(r * COLS + c) % COLORS.length];
+      d.style.background = color;
       elBoard.appendChild(d);
     }
   }
 }
+
 function bindUI() {
   elBoard.addEventListener('click', onClickTile);
   document.getElementById('btnNew').onclick = () => { score = 0; updateScore(); setupBoard(); renderAll(); setMsg('New board.'); };
@@ -341,6 +355,7 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
 
 
