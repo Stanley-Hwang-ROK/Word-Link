@@ -3,119 +3,285 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Word-Link Puzzle</title>
-  <style>
-    :root { --bg:#0f172a; --panel:#111827; --tile:#1f2937; --tileSel:#2563eb; --good:#16a34a; --bad:#dc2626; --text:#e5e7eb; --muted:#9ca3af; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
-    .wrap { margin:auto; width:min(95vw, 900px); }
-    header { display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:10px; }
-    h1 { font-size:20px; font-weight:700; margin:0; letter-spacing:.3px; }
-    .board { display:grid; gap:6px; background:linear-gradient(180deg, #0b1022, #0b1228); padding:10px; border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-    .hud { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 14px; }
-    .badge { background:var(--panel); padding:8px 12px; border-radius:999px; font-weight:600; }
-    button { background:#334155; color:var(--text); border:1px solid #475569; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; }
-    button:hover { filter:brightness(1.1); }
-    button:disabled { opacity:.5; cursor:not-allowed; }
-    .tile { width:48px; height:48px; display:grid; place-items:center; border-radius:10px; background:var(--tile); border:1px solid #374151; user-select:none; font-weight:800; font-size:20px; }
-    .tile.empty { visibility:hidden; }
-    .tile.sel { background:var(--tileSel); }
-    .msg { min-height:20px; color:var(--muted); font-weight:600; }
-  </style>
-
-  <!-- PWA -->
+  <title>Word-Link Puzzle — Click-to-Swap</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
+  <style>
+    :root { --bg:#0f172a; --panel:#111827; --tile:#1f2937; --tileSel:#2563eb; --text:#e5e7eb; }
+    body { margin:0; font-family: system-ui; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+    .wrap { margin:auto; width:min(95vw, 900px); }
+    header { display:flex; align-items:center; justify-content:space-between; padding:12px 0; }
+    .board { display:grid; gap:6px; padding:10px; }
+    .tile { width:48px; height:48px; display:grid; place-items:center; border-radius:8px; background:var(--tile); color:#fff; font-weight:800; font-size:20px; user-select:none; border:1px solid #374151; transition:transform .08s ease; }
+    .tile.sel { background:var(--tileSel); transform:scale(1.05); }
+    .hud { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 12px; }
+    .badge { background:var(--panel); padding:6px 10px; border-radius:999px; font-weight:700; }
+    .msg { min-height:20px; opacity:.9; }
+  </style>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>워드 링크 퍼즐</h1>
+      <h1 style="margin:0;font-size:20px">Word‑Link (Click‑to‑Swap)</h1>
       <div>
-        <button id="btnHint">힌트</button>
-        <button id="btnShuffle">뒤섞기</button>
-        <button id="btnNew">새로운 게임</button>
+        <button id="btnHint">Hint</button>
+        <button id="btnShuffle">Shuffle</button>
+        <button id="btnNew">New Game</button>
       </div>
     </header>
     <div class="hud">
-      <div class="badge">점수: <span id="score">0</span></div>
-      <div class="badge">선택한: <span id="currentWord"></span></div>
+      <div class="badge">Score: <span id="score">0</span></div>
+      <div class="badge">Selected: <span id="currentWord"></span></div>
     </div>
     <div id="board" class="board"></div>
-    <div class="msg" id="msg">인접한 문자(위/아래/좌/우)를 연결하여 유효한 단어를 형성하면 제거됩니다.</div>
+    <div id="msg" class="msg">두 개의 블록을 **연달아 클릭**하면 서로 자리를 바꿉니다. 스왑 후 가로/세로로 연속한 글자에서 사전에 있는 단어가 나오면 해당 글자들이 파괴됩니다.</div>
   </div>
 
-  <script>
-  (() => {
-    const ROWS = 10, COLS = 8, MIN_WORD = 3;
-    const DICTIONARY = new Set(['CAT','DOG','SUN','SEA','TREE','STAR','BOOK','APPLE','RUN','PLAY','CODE','PUZZLE']);
-    let grid = Array.from({length:ROWS},()=>Array(COLS).fill(''));
-    let sel = [], score = 0, mouseDown=false;
-    const elBoard=document.getElementById('board');
-    const elScore=document.getElementById('score');
-    const elWord=document.getElementById('currentWord');
-    const elMsg=document.getElementById('msg');
+<script>
+/* =========================
+   Word-Link (Click-to-Swap)
+   with external dictionary
+   ========================= */
+const ROWS = 10, COLS = 8, MIN_WORD = 3, MAX_WORD = 6;
 
-    function randLetter(){
-      const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      return letters[Math.floor(Math.random()*letters.length)];
+// 외부 words.txt에서 로드 (실패 시 FALLBACK_WORDS)
+let DICTIONARY = new Set();
+const FALLBACK_WORDS = [
+  'CAT','DOG','SUN','SEA','TREE','STAR','BOOK','APPLE','RUN','PLAY','CODE',
+  'PUZZLE','READ','WRITE','MAKE','LINK','WORD','GAME'
+];
+
+// ---- 상태 & 엘리먼트 ----
+let grid = Array.from({length: ROWS}, () => Array(COLS).fill(''));
+let score = 0;
+let firstSel = null; // {r,c}
+
+const elBoard = document.getElementById('board');
+const elScore = document.getElementById('score');
+const elMsg   = document.getElementById('msg');
+const elWord  = document.getElementById('currentWord');
+
+// HUD에 사전 개수 표시 (선택)
+const hud = document.querySelector('.hud');
+let elDictCount = null;
+if (hud) {
+  const b = document.createElement('div');
+  b.className = 'badge';
+  b.innerHTML = 'Dict: <span id="dictCount">0</span>';
+  hud.appendChild(b);
+  elDictCount = document.getElementById('dictCount');
+}
+
+// ---- 초기화 ----
+setupBoard();
+renderAll();
+bindUI();
+loadDictionary('words.txt')
+  .then(count => {
+    if (elDictCount) elDictCount.textContent = String(count);
+    setMsg(`Dictionary loaded: ${count} words (3-6 letters)`);
+  })
+  .catch(() => {
+    DICTIONARY = new Set(FALLBACK_WORDS);
+    if (elDictCount) elDictCount.textContent = String(DICTIONARY.size);
+    setMsg('Fallback dictionary loaded');
+  });
+
+// ---- 함수들 ----
+function randLetter() {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return letters[Math.floor(Math.random() * letters.length)];
+}
+function setupBoard() {
+  elBoard.style.gridTemplateColumns = `repeat(${COLS}, 48px)`;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) grid[r][c] = randLetter();
+}
+function renderAll() {
+  elBoard.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const d = document.createElement('div');
+      d.className = 'tile';
+      d.dataset.r = r; d.dataset.c = c;
+      d.textContent = grid[r][c];
+      elBoard.appendChild(d);
     }
-    function setupBoard(){
-      elBoard.style.gridTemplateColumns=`repeat(${COLS},48px)`;
-      elBoard.style.gridTemplateRows=`repeat(${ROWS},48px)`;
-      for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)grid[r][c]=randLetter();
+  }
+}
+function bindUI() {
+  elBoard.addEventListener('click', onClickTile);
+  document.getElementById('btnNew').onclick = () => { score = 0; updateScore(); setupBoard(); renderAll(); setMsg('New board.'); };
+  document.getElementById('btnShuffle').onclick = () => { shuffleBoard(); };
+  document.getElementById('btnHint').onclick = () => { const h = findAnyMatch(); setMsg(h ? `예: ${h.word}` : '가능한 단어를 못 찾았어요'); };
+}
+
+function onClickTile(e) {
+  const t = e.target.closest('.tile'); if (!t) return;
+  const r = +t.dataset.r, c = +t.dataset.c;
+
+  if (!firstSel) { firstSel = { r, c }; highlight(r, c, true); setSelWord(''); return; }
+
+  const { r: r1, c: c1 } = firstSel;
+  if (r === r1 && c === c1) { highlight(r, c, false); firstSel = null; return; }
+
+  // 이웃만 스왑
+  if (!isNeighbor(r1, c1, r, c)) { highlight(r1, c1, false); firstSel = { r, c }; highlight(r, c, true); return; }
+
+  swap([r1, c1], [r, c]);
+  highlight(r1, c1, false); highlight(r, c, false); firstSel = null;
+  renderAll();
+  resolveMatchesCascade();
+}
+
+function setSelWord(s){ elWord && (elWord.textContent = s); }
+function updateScore(){ elScore.textContent = String(score); }
+function setMsg(s){ elMsg.textContent = s; }
+function isNeighbor(r1,c1,r2,c2){ return Math.abs(r1-r2)+Math.abs(c1-c2)===1; }
+function swap([r1,c1],[r2,c2]){ const t = grid[r1][c1]; grid[r1][c1] = grid[r2][c2]; grid[r2][c2] = t; }
+function highlight(r,c,on){ const el = document.querySelector(`[data-r='${r}'][data-c='${c}']`); if (el) el.classList.toggle('sel', !!on); }
+
+// ---- 매치 탐색 & 처리 ----
+function resolveMatchesCascade(){
+  let totalCleared = 0, lastWordShown = '';
+  while (true) {
+    const marks = findMatches();
+    if (marks.size === 0) break;
+    const cleared = clearMarked(marks);
+    totalCleared += cleared.count;
+    if (cleared.exampleWord) lastWordShown = cleared.exampleWord;
+    applyGravity();
+    refill();
+    renderAll();
+  }
+  if (totalCleared > 0) {
+    score += totalCleared * 5; updateScore();
+    setMsg(lastWordShown ? `Cleared (${totalCleared}). ex: ${lastWordShown}` : `Cleared ${totalCleared}`);
+  } else {
+    setMsg('No match');
+  }
+}
+
+function findMatches(){
+  const marks = new Set(); let exampleWord = '';
+  // 가로
+  for (let r = 0; r < ROWS; r++) {
+    let c = 0;
+    while (c < COLS) {
+      let c2 = c;
+      while (c2 + 1 < COLS && grid[r][c2 + 1]) c2++;
+      if (c2 - c + 1 >= MIN_WORD) {
+        const letters = grid[r].slice(c, c2 + 1).join('');
+        markSubstrings(r, c, 0, 1, letters, marks, w => { if (!exampleWord) exampleWord = w; });
+      }
+      c = c2 + 1;
     }
-    function renderAll(){
-      elBoard.innerHTML='';
-      for(let r=0;r<ROWS;r++){
-        for(let c=0;c<COLS;c++){
-          const d=document.createElement('div');
-          d.className='tile'; d.textContent=grid[r][c];
-          d.dataset.r=r; d.dataset.c=c;
-          elBoard.appendChild(d);
+  }
+  // 세로
+  for (let c = 0; c < COLS; c++) {
+    let r = 0;
+    while (r < ROWS) {
+      let r2 = r;
+      while (r2 + 1 < ROWS && grid[r2 + 1][c]) r2++;
+      if (r2 - r + 1 >= MIN_WORD) {
+        let letters = '';
+        for (let i = r; i <= r2; i++) letters += grid[i][c];
+        markSubstrings(r, c, 1, 0, letters, marks, w => { if (!exampleWord) exampleWord = w; });
+      }
+      r = r2 + 1;
+    }
+  }
+  marks.exampleWord = exampleWord;
+  return marks;
+}
+
+function markSubstrings(r0, c0, dr, dc, letters, marks, onExample){
+  const n = letters.length;
+  for (let len = MIN_WORD; len <= Math.min(n, MAX_WORD); len++) {
+    for (let s = 0; s + len <= n; s++) {
+      const word = letters.slice(s, s + len).toUpperCase();
+      if (DICTIONARY.has(word)) {
+        for (let k = 0; k < len; k++) {
+          const rr = r0 + (s + k) * dr, cc = c0 + (s + k) * dc;
+          marks.add(rr + ',' + cc);
         }
+        if (onExample) onExample(word);
       }
     }
-    function updateScore(){elScore.textContent=score;}
-    function updateWord(){elWord.textContent=sel.map(p=>grid[p.r][p.c]).join('');}
-    function setMsg(s){elMsg.textContent=s;}
+  }
+}
 
-    elBoard.addEventListener('mousedown',e=>{
-      const t=e.target.closest('.tile'); if(!t)return;
-      mouseDown=true; sel=[]; const r=+t.dataset.r,c=+t.dataset.c;
-      sel.push({r,c}); t.classList.add('sel'); updateWord();
-    });
-    document.addEventListener('mouseup',()=>{
-      if(!mouseDown)return; mouseDown=false;
-      const word=sel.map(p=>grid[p.r][p.c]).join('');
-      if(word.length>=MIN_WORD && DICTIONARY.has(word)){
-        score+=word.length*5; updateScore(); setMsg(`Cleared: ${word}`);
-        for(const p of sel)grid[p.r][p.c]='';
-        renderAll();
-      }else setMsg(word.length?`Not a word: ${word}`:'');
-      sel=[]; updateWord();
-    });
-    elBoard.addEventListener('mousemove',e=>{
-      if(!mouseDown)return; const t=e.target.closest('.tile'); if(!t)return;
-      const r=+t.dataset.r,c=+t.dataset.c,last=sel[sel.length-1];
-      if(Math.abs(last.r-r)+Math.abs(last.c-c)===1 && !sel.some(p=>p.r===r&&p.c===c)){
-        sel.push({r,c}); t.classList.add('sel'); updateWord();
-      }
-    });
-
-    document.getElementById('btnNew').onclick=()=>{score=0;updateScore();setupBoard();renderAll();};
-    document.getElementById('btnShuffle').onclick=()=>{grid.flat().sort(()=>Math.random()-0.5);renderAll();};
-    document.getElementById('btnHint').onclick=()=>setMsg('Hint not implemented in demo');
-
-    setupBoard(); renderAll(); updateScore();
-  })();
-  </script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(console.error);
+function clearMarked(marks){
+  let count = 0; const exampleWord = marks.exampleWord || '';
+  for (const key of marks) {
+    const [r, c] = key.split(',').map(Number);
+    if (grid[r][c]) { grid[r][c] = ''; count++; }
+  }
+  return { count, exampleWord };
+}
+function applyGravity(){
+  for (let c = 0; c < COLS; c++) {
+    let write = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r][c]) { grid[write][c] = grid[r][c]; if (write !== r) grid[r][c] = ''; write--; }
     }
-  </script>
+  }
+}
+function refill(){
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!grid[r][c]) grid[r][c] = randLetter();
+}
+function shuffleBoard(){
+  const arr = [];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) arr.push(grid[r][c]);
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  let k = 0; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) grid[r][c] = arr[k++];
+  renderAll(); setMsg('Shuffled');
+}
+
+// 현재 보드에서 만들 수 있는 3~6글자 부분문자열로 힌트 찾기
+function findAnyMatch(){
+  // 가로
+  for (let r = 0; r < ROWS; r++) {
+    for (let c0 = 0; c0 < COLS; c0++) {
+      let s = '';
+      for (let c = c0; c < COLS && s.length < MAX_WORD; c++) {
+        s += grid[r][c];
+        if (s.length >= MIN_WORD && DICTIONARY.has(s)) return { word: s };
+      }
+    }
+  }
+  // 세로
+  for (let c = 0; c < COLS; c++) {
+    for (let r0 = 0; r0 < ROWS; r0++) {
+      let s = '';
+      for (let r = r0; r < ROWS && s.length < MAX_WORD; r++) {
+        s += grid[r][c];
+        if (s.length >= MIN_WORD && DICTIONARY.has(s)) return { word: s };
+      }
+    }
+  }
+  return null;
+}
+
+// 외부 사전 로딩
+async function loadDictionary(url){
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('dict fetch failed');
+  const text = await res.text();
+  const list = text.split(/\r?\n/)
+    .map(s => s.trim().toUpperCase())
+    .filter(s => s && /^[A-Z]{3,}$/.test(s) && s.length >= MIN_WORD && s.length <= MAX_WORD);
+  DICTIONARY = new Set(list);
+  return DICTIONARY.size;
+}
+</script>
+
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(()=>{console.log('Service Worker registered');});
+}
+</script>
 </body>
 </html>
