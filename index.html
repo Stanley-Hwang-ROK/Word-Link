@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Word-Link Puzzle — Click-to-Swap</title>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json?v=6">
   <meta name="theme-color" content="#0f172a">
   <style>
     :root { --bg:#0f172a; --panel:#111827; --tile:#1f2937; --tileSel:#2563eb; --text:#e5e7eb; }
@@ -78,7 +78,7 @@ if (hud) {
 setupBoard();
 renderAll();
 bindUI();
-loadDictionary('words.txt')
+loadDictionary('words.txt?v=6')
   .then(count => {
     if (elDictCount) elDictCount.textContent = String(count);
     setMsg(`Dictionary loaded: ${count} words (3-6 letters)`);
@@ -279,9 +279,23 @@ async function loadDictionary(url){
 
 
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(()=>{console.log('Service Worker registered');});
-}
+  // https/localhost에서만 등록
+  const canSW = 'serviceWorker' in navigator &&
+    (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+  if (canSW) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      // 새 SW가 오면 자동으로 페이지 한 번만 리로드
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+      });
+    }).catch(console.error);
+  }
 </script>
+
 </body>
 </html>
+
