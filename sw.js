@@ -1,5 +1,5 @@
-// sw.js (업데이트 버전)
-const CACHE = 'wordlink-v4'; // ★ 버전 올리기
+// sw.js
+const CACHE = 'wordlink-v5'; // ★ 숫자 올리기
 const ASSETS = [
   './',
   'index.html',
@@ -9,9 +9,8 @@ const ASSETS = [
   'icons/icon-512.png'
 ];
 
-// 새 SW가 바로 활성화되도록
 self.addEventListener('install', e => {
-  self.skipWaiting(); // ★ 대기 없이 곧바로 대체
+  self.skipWaiting(); // ★ 새 워커 즉시 대기 종료
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
 });
 
@@ -21,22 +20,19 @@ self.addEventListener('activate', e => {
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     )
   );
-  return self.clients.claim(); // ★ 열린 탭 즉시 제어
+  return self.clients.claim(); // ★ 열린 탭 즉시 장악
 });
 
 self.addEventListener('fetch', e => {
-  const req = e.request;
   e.respondWith(
-    caches.match(req).then(cached => {
-      // 캐시 먼저, 없으면 네트워크
-      return cached || fetch(req).then(resp => {
-        // GET만 캐시, same-origin만
-        if (req.method === 'GET' && resp.ok && resp.type === 'basic') {
+    caches.match(e.request).then(cached =>
+      cached || fetch(e.request).then(resp => {
+        if (e.request.method === 'GET' && resp.ok && resp.type === 'basic') {
           const clone = resp.clone();
-          caches.open(CACHE).then(c => c.put(req, clone));
+          caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return resp;
-      });
-    })
+      })
+    )
   );
 });
