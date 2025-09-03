@@ -177,7 +177,18 @@ function setSelWord(s){ elWord && (elWord.textContent = s); }
 function updateScore(){ elScore.textContent = String(score); }
 function setMsg(s){ elMsg.textContent = s; }
 function isNeighbor(r1,c1,r2,c2){ return Math.abs(r1-r2)+Math.abs(c1-c2)===1; }
-function swap([r1,c1],[r2,c2]){ const t = grid[r1][c1]; grid[r1][c1] = grid[r2][c2]; grid[r2][c2] = t; }
+function swap([r1, c1], [r2, c2]) {
+  // 글자 스왑
+  let t = grid[r1][c1];
+  grid[r1][c1] = grid[r2][c2];
+  grid[r2][c2] = t;
+
+  // 색상 스왑
+  let tc = colorGrid[r1][c1];
+  colorGrid[r1][c1] = colorGrid[r2][c2];
+  colorGrid[r2][c2] = tc;
+}
+
 function highlight(r,c,on){ const el = document.querySelector(`[data-r='${r}'][data-c='${c}']`); if (el) el.classList.toggle('sel', !!on); }
 
 // ---- 매치 탐색 & 처리 ----
@@ -365,6 +376,7 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
 
 
