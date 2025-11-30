@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Word-Link Puzzle — Pastel 3D Edition</title>
   
-  <link rel="manifest" href="manifest.json?v=11">
+  <link rel="manifest" href="manifest.json?v=12">
   <link rel="apple-touch-icon" href="ICON-192.png">
   <meta name="theme-color" content="#f5f7fa">
 
@@ -141,7 +141,7 @@
 ====================== */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// 1. 타일 스왑 소리 (뽁!)
+// 1. 타일 스왑 소리 (귀여운 뽁!)
 function playPopSound() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
@@ -155,22 +155,25 @@ function playPopSound() {
   osc.start(); osc.stop(audioCtx.currentTime + 0.1);
 }
 
-// 2. 단어 매칭 성공 소리 (딩동! - 맑은 소리)
+// 2. 단어 매칭 성공 소리 (띠링~! 성공음)
+// 수정: 음이 올라가게(Happy) 변경함! (도 -> 높은 도)
 function playMatchSound() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   
   osc.type = 'sine'; 
-  // 높은 음에서 살짝 떨어지며 여운 (성공 느낌)
-  osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-  osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.6); 
+  
+  // 📉 Before: 880 -> 440 (슬픈 소리)
+  // 📈 After: 523(C5) -> 1046(C6) (기분 좋은 상승음!)
+  osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+  osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.3); 
 
   gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
 
   osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.3);
 }
 
 /* ======================
@@ -416,7 +419,7 @@ function markStrip(r0,c0,dr,dc,str,marks,onExample){
 async function clearMarked(marks){
   const exampleWord=marks.exampleWord||"";
   
-  // 🔊 여기서 성공 소리 재생! (시각 효과 시작과 동시에)
+  // 🔊 성공 소리 재생!
   playMatchSound();
 
   for(const pos of marks){
