@@ -114,9 +114,20 @@
   </div>
 
   <!-- GAME OVER OVERLAY -->
-  <div id="gameover-overlay">
-    <div id="gameover-text">GAME OVER</div>
-  </div>
+ <div id="gameover-overlay">
+  <div id="gameover-text">GAME OVER</div>
+  <button id="btnRestart" style="
+    margin-top:30px;
+    padding:12px 20px;
+    font-size:20px;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    cursor:pointer;
+  ">RESTART</button>
+</div>
+
 
 
 <script>
@@ -212,6 +223,22 @@ function renderAll(){
 bindEvents();
 
 function bindEvents(){
+  document.getElementById("btnRestart").onclick = () => {
+  document.getElementById("gameover-overlay").style.display = "none";
+  document.getElementById("category-menu").style.display = "block";
+
+  score = 0; updateScore();
+  moves = 10; updateMoves();
+  firstSel = null;
+
+  // 빈 보드로 초기화
+  grid = Array.from({length: ROWS}, () => Array(COLS).fill(""));
+  colorGrid = Array.from({length: ROWS}, () => Array(COLS).fill(""));
+  renderAll();
+
+  setMsg("카테고리를 선택해주세요.");
+};
+
 
   document.getElementById("btnShuffle").onclick=shuffleBoard;
 
@@ -483,3 +510,4 @@ function shuffleBoard(){
 
 </body>
 </html>
+
