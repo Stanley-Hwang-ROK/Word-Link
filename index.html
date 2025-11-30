@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Word-Link Puzzle — Click-to-Swap</title>
+  <title>Word-Link Puzzle — Pastel Edition</title>
   <meta name="theme-color" content="#0f172a">
 
   <style>
-    :root { --bg:#0f172a; --panel:#111827; --tile:#1f2937; --tileSel:#2563eb; --text:#e5e7eb; }
+    :root { --bg:#f5f7fa; --panel:#ffffff; --text:#111; }
     body { margin:0; font-family: system-ui; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
     .wrap { margin:auto; width:min(95vw, 900px); }
     header { display:flex; justify-content:space-between; align-items:center; padding:12px 0; }
@@ -21,24 +21,34 @@
     }
 
     .tile {
-      width:48px; height:48px;
-      display:grid; place-items:center;
+      width:48px;
+      height:48px;
+      display:grid;
+      place-items:center;
       border-radius:8px;
-      background:var(--tile);
-      font-size:20px; font-weight:800; color:#fff;
+      background:#eee;
+      font-size:20px;
+      font-weight:900;
+      color:#000; /* 🔥 검정색 글자 */
       user-select:none;
-      border:1px solid #374151;
+      border:1px solid #d0d0d0;
       transition:transform .08s ease;
     }
-    .tile.sel { background:var(--tileSel); transform:scale(1.05); }
+    .tile.sel { outline:2px solid #2563eb; transform:scale(1.05); }
     .tile.match {
-      background:#f59e0b !important;
+      background:#ffe680 !important;
       transform:scale(1.2);
       transition:all .3s ease;
     }
 
     .hud { display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; }
-    .badge { background:#111827; padding:6px 12px; border-radius:999px; font-weight:700; }
+    .badge {
+      background:#ffffff;
+      padding:6px 12px;
+      border-radius:999px;
+      font-weight:700;
+      border:1px solid #dcdcdc;
+    }
     .msg { min-height:20px; opacity:.9; margin-top:6px; }
 
     .category-btn {
@@ -52,7 +62,7 @@
       cursor:pointer;
     }
 
-    #moves { color:#facc15; font-weight:900; transition:transform .15s ease; }
+    #moves { color:#d97706; font-weight:900; transition:transform .15s ease; }
     #moves.bump { transform:scale(1.25); }
 
     /* GAME OVER OVERLAY */
@@ -62,6 +72,7 @@
       width:100vw; height:100vh;
       background:rgba(0,0,0,0.75);
       display:none;
+      flex-direction:column;
       justify-content:center;
       align-items:center;
       z-index:9999;
@@ -74,13 +85,21 @@
       text-shadow:0 0 20px black;
       animation:pulse 1s infinite alternate;
     }
-    @keyframes fadeIn {
-      from { opacity:0; }
-      to   { opacity:1; }
-    }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
     @keyframes pulse {
       from { transform:scale(0.9); opacity:.7; }
       to   { transform:scale(1.1); opacity:1; }
+    }
+
+    #btnRestart {
+      margin-top:30px;
+      padding:12px 20px;
+      font-size:20px;
+      border-radius:8px;
+      background:#2563eb;
+      color:white;
+      border:none;
+      cursor:pointer;
     }
   </style>
 </head>
@@ -89,7 +108,7 @@
   <div class="wrap">
 
     <header>
-      <h1 style="margin:0;">Word-Link (Swap Puzzle)</h1>
+      <h1 style="margin:0;">Word-Link (Pastel Edition)</h1>
       <div>
         <button id="btnShuffle">Shuffle</button>
         <button id="btnNew">New Game</button>
@@ -113,21 +132,11 @@
     <div id="msg" class="msg">카테고리를 먼저 선택하세요.</div>
   </div>
 
-  <!-- GAME OVER OVERLAY -->
- <div id="gameover-overlay">
-  <div id="gameover-text">GAME OVER</div>
-  <button id="btnRestart" style="
-    margin-top:30px;
-    padding:12px 20px;
-    font-size:20px;
-    border-radius:8px;
-    background:#2563eb;
-    color:white;
-    border:none;
-    cursor:pointer;
-  ">RESTART</button>
-</div>
-
+  <!-- GAME OVER LAYER -->
+  <div id="gameover-overlay">
+    <div id="gameover-text">GAME OVER</div>
+    <button id="btnRestart">RESTART</button>
+  </div>
 
 
 <script>
@@ -135,18 +144,30 @@
    TTS (유아용)
 ====================== */
 function speakWord(word){
-  const u = new SpeechSynthesisUtterance(word);
-  u.lang = "en-US";
-  u.rate = 0.65;   // 느린 발음
-  u.pitch = 1.0;
+  const u=new SpeechSynthesisUtterance(word);
+  u.lang="en-US";
+  u.rate=0.65;
+  u.pitch=1.0;
   speechSynthesis.speak(u);
 }
 
 /* ======================
-   게임 기본 설정
+   SETTINGS
 ====================== */
+
 const ROWS=10, COLS=8, MIN_WORD=3, MAX_WORD=6;
-const COLORS=["#f87171","#fbbf24","#34d399","#60a5fa","#a78bfa","#f472b6","#facc15","#38bdf8"];
+
+/* 🔥 파스텔 팔레트 적용 */
+const COLORS=[
+  "#F8D7DA", // Pastel Pink
+  "#FFF3CD", // Pastel Yellow
+  "#D1F2EB", // Pastel Mint
+  "#D6EAF8", // Pastel Blue
+  "#E8DAEF", // Pastel Purple
+  "#FADBD8", // Peach
+  "#FCF3CF", // Light Gold
+  "#D4E6F1"  // Soft Sky Blue
+];
 
 const CATEGORY_WORDS={
   animal:["CAT","DOG","LION","TIGER","BEAR","FROG","BIRD","FISH","COW","PIG","FOX","DEER","BEE","DUCK"],
@@ -171,7 +192,7 @@ const elMoves=document.getElementById("moves");
 const elMsg=document.getElementById("msg");
 const elDict=document.getElementById("dictCount");
 
-/* UI updates */
+/* UI */
 function updateScore(){ elScore.textContent=score; }
 function updateMoves(){
   elMoves.textContent=moves;
@@ -180,9 +201,7 @@ function updateMoves(){
 }
 function setMsg(t){ elMsg.textContent=t; }
 
-/* ======================
-   보드 생성
-====================== */
+/* BOARD */
 function randLetter(){
   if(LETTER_BAG.length)
     return LETTER_BAG[Math.floor(Math.random()*LETTER_BAG.length)];
@@ -190,13 +209,12 @@ function randLetter(){
   const bag="EEEEEEAAA AAI IIOOOUU"+
             "NNNRRRTTTLLSS"+
             "DGGBCMPFHVWYKJXQZ";
-  const letters=bag.replace(/\s/g,"");
-  return letters[Math.floor(Math.random()*letters.length)];
+  return bag.replace(/\s/g,"")[Math.floor(Math.random()*bag.length)];
 }
 
 function setupBoard(){
-  for(let r=0; r<ROWS; r++){
-    for(let c=0; c<COLS; c++){
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
       grid[r][c]=randLetter();
       colorGrid[r][c]=COLORS[Math.floor(Math.random()*COLORS.length)];
     }
@@ -205,11 +223,12 @@ function setupBoard(){
 
 function renderAll(){
   elBoard.innerHTML="";
-  for(let r=0; r<ROWS; r++){
-    for(let c=0; c<COLS; c++){
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
       const d=document.createElement("div");
       d.className="tile";
-      d.dataset.r=r; d.dataset.c=c;
+      d.dataset.r=r;
+      d.dataset.c=c;
       d.textContent=grid[r][c];
       d.style.background=colorGrid[r][c];
       elBoard.appendChild(d);
@@ -217,28 +236,9 @@ function renderAll(){
   }
 }
 
-/* ======================
-   이벤트 바인딩
-====================== */
+/* EVENTS */
 bindEvents();
-
 function bindEvents(){
-  document.getElementById("btnRestart").onclick = () => {
-  document.getElementById("gameover-overlay").style.display = "none";
-  document.getElementById("category-menu").style.display = "block";
-
-  score = 0; updateScore();
-  moves = 10; updateMoves();
-  firstSel = null;
-
-  // 빈 보드로 초기화
-  grid = Array.from({length: ROWS}, () => Array(COLS).fill(""));
-  colorGrid = Array.from({length: ROWS}, () => Array(COLS).fill(""));
-  renderAll();
-
-  setMsg("카테고리를 선택해주세요.");
-};
-
 
   document.getElementById("btnShuffle").onclick=shuffleBoard;
 
@@ -256,6 +256,21 @@ function bindEvents(){
     setMsg("카테고리를 먼저 선택하세요.");
   };
 
+  document.getElementById("btnRestart").onclick=()=>{
+    document.getElementById("gameover-overlay").style.display="none";
+    document.getElementById("category-menu").style.display="block";
+
+    score=0; updateScore();
+    moves=10; updateMoves();
+    firstSel=null;
+
+    grid=Array.from({length:ROWS},()=>Array(COLS).fill(""));
+    colorGrid=Array.from({length:ROWS},()=>Array(COLS).fill(""));
+    renderAll();
+
+    setMsg("카테고리를 선택해주세요.");
+  };
+
   document.querySelectorAll(".category-btn").forEach(btn=>{
     btn.addEventListener("click",()=>{
       const cat=btn.dataset.cat;
@@ -271,6 +286,7 @@ function bindEvents(){
 
       setupBoard();
       renderAll();
+
       setMsg(`${cat} category loaded (${DICTIONARY.size} words).`);
     });
   });
@@ -278,19 +294,14 @@ function bindEvents(){
   elBoard.addEventListener("click",onClickTile);
 }
 
-/* ======================
-   스왑 로직
-====================== */
+/* TILE INTERACTIONS */
 async function onClickTile(e){
-  if(moves<=0){
-    gameOver();
-    return;
-  }
+  if(moves<=0){ gameOver(); return; }
 
-  const tile=e.target.closest(".tile");
-  if(!tile) return;
+  const t=e.target.closest(".tile");
+  if(!t) return;
 
-  const r=+tile.dataset.r, c=+tile.dataset.c;
+  const r=+t.dataset.r, c=+t.dataset.c;
 
   if(!firstSel){
     firstSel={r,c};
@@ -302,6 +313,10 @@ async function onClickTile(e){
     highlight(r,c,false);
     firstSel=null;
     return;
+  }
+
+  if(!isNeighbor(firstSel.r,firstSel.c,r,c)){
+    highlight(firstSel.r,b,false);
   }
 
   if(!isNeighbor(firstSel.r,firstSel.c,r,c)){
@@ -340,17 +355,13 @@ function swap([r1,c1],[r2,c2]){
   [colorGrid[r1][c1],colorGrid[r2][c2]]=[colorGrid[r2][c2],colorGrid[r1][c1]];
 }
 
-/* ======================
-   GAME OVER
-====================== */
+/* GAME OVER */
 function gameOver(){
   setMsg("Game Over — No moves left!");
   document.getElementById("gameover-overlay").style.display="flex";
 }
 
-/* ======================
-   매칭 탐색
-====================== */
+/* MATCHING */
 async function resolveMatchesCascade(){
   let total=0;
   let lastWord="";
@@ -510,4 +521,3 @@ function shuffleBoard(){
 
 </body>
 </html>
-
