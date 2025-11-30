@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Word-Link Puzzle — Pastel 3D Edition</title>
+  
+  <link rel="manifest" href="manifest.json?v=7">
+  <link rel="apple-touch-icon" href="ICON-192.png">
   <meta name="theme-color" content="#f5f7fa">
 
   <style>
@@ -15,16 +18,20 @@
 
     body {
       margin:0;
-      font-family: system-ui;
+      font-family: system-ui, -apple-system, sans-serif;
       background:var(--bg);
       color:var(--text);
       min-height:100vh;
       display:flex;
+      overscroll-behavior: none; /* 당겨서 새로고침 방지 */
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .wrap {
       margin:auto;
-      width:min(95vw, 900px);
+      width:min(95vw, 500px); /* 모바일 최적화 폭 */
+      padding: 0 10px;
     }
 
     header {
@@ -33,74 +40,73 @@
       align-items:center;
       padding:12px 0;
     }
+    
+    h1 { font-size: 1.2rem; }
 
     /* BOARD GRID */
     .board {
       display:grid;
       gap:6px;
       padding:10px;
-      grid-template-columns:repeat(8,48px);
+      /* 화면 꽉 차게 반응형으로 변경 */
+      grid-template-columns:repeat(8, 1fr);
       justify-content:center;
+      background: #eef2f6;
+      border-radius: 16px;
+      box-shadow: inset 4px 4px 8px rgba(0,0,0,0.05), inset -4px -4px 8px rgba(255,255,255,0.8);
     }
 
     /* 🎨 3D 파스텔 뉴모피즘 타일 */
     .tile {
-      width:48px;
-      height:48px;
+      width:100%;
+      aspect-ratio: 1/1; /* 정사각형 유지 */
       display:grid;
       place-items:center;
-
-      border-radius:14px;
+      border-radius:12px;
 
       /* 배경은 var(--tileColor)로 받아옴 */
-     background:
-  linear-gradient(
-    145deg,
-    rgba(255,255,255,0.6),
-    rgba(0,0,0,0.08)
-  ),
-  var(--tileColor);
+      background: linear-gradient(145deg, rgba(255,255,255,0.6), rgba(0,0,0,0.05)), var(--tileColor);
 
-      font-size:22px;
+      font-size: clamp(12px, 4vw, 22px); /* 글자 크기 반응형 */
       font-weight:900;
       color:#1a1a1a;
 
       user-select:none;
-      border:1px solid rgba(255,255,255,0.6);
+      border:1px solid rgba(255,255,255,0.4);
 
-      box-shadow:
-        inset -3px -3px 6px rgba(255,255,255,0.8),
-        inset 3px 3px 6px rgba(0,0,0,0.12),
-        3px 3px 6px rgba(0,0,0,0.12),
-        -2px -2px 4px rgba(255,255,255,0.7);
+      /* 부드러운 3D 그림자 */
+      box-shadow: 
+        3px 3px 6px rgba(166, 180, 200, 0.4), 
+        -3px -3px 6px rgba(255,255,255, 0.8);
 
       transition:transform .12s ease, box-shadow .12s ease;
+      cursor: pointer;
+      touch-action: manipulation;
     }
 
     /* 선택 효과 */
     .tile.sel {
-      transform:scale(1.06);
-      box-shadow:
-        inset -2px -2px 4px rgba(255,255,255,0.9),
-        inset 4px 4px 6px rgba(0,0,0,0.18),
-        4px 4px 8px rgba(0,0,0,0.15);
+      transform:scale(0.95);
+      /* 눌린 효과 (Inset) */
+      box-shadow: 
+        inset 3px 3px 6px rgba(166, 180, 200, 0.5), 
+        inset -3px -3px 6px rgba(255,255,255, 0.8);
+      border-color: #2563eb;
     }
 
     /* 매칭된 타일 (강조된 3D) */
     .tile.match {
-      transform:scale(1.14);
+      transform:scale(1.1);
       background: linear-gradient(145deg, #FFF4C7, #FFD76A);
-      box-shadow:
-        inset -2px -2px 5px rgba(255,255,255,0.9),
-        inset 4px 4px 7px rgba(0,0,0,0.2),
-        4px 4px 9px rgba(0,0,0,0.18);
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+      z-index: 10;
     }
 
     .hud {
       display:flex;
-      gap:10px;
+      gap:8px;
       margin:10px 0;
-      flex-wrap:wrap;
+      justify-content: center;
     }
 
     .badge {
@@ -108,34 +114,57 @@
       padding:6px 12px;
       border-radius:999px;
       font-weight:700;
-      border:1px solid #dcdcdc;
+      font-size: 0.9rem;
+      border:1px solid #e2e8f0;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
     }
 
     .msg {
-      min-height:20px;
-      opacity:.9;
-      margin-top:6px;
+      text-align: center;
+      min-height:24px;
+      opacity:.8;
+      margin-top:10px;
+      font-size: 0.9rem;
     }
 
     .category-btn {
-      padding:10px 16px;
-      margin:6px;
-      border-radius:6px;
+      width: 100%;
+      padding:14px;
+      margin:6px 0;
+      border-radius:12px;
       background:#2563eb;
       border:none;
       font-size:16px;
+      font-weight: bold;
       color:white;
       cursor:pointer;
+      box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+    }
+    
+    button {
+       font-family: inherit;
+    }
+
+    #header-btns button {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
     }
 
     #moves {
       color:#d97706;
       font-weight:900;
       transition:transform .15s ease;
+      display: inline-block;
     }
 
     #moves.bump {
-      transform:scale(1.25);
+      transform:scale(1.4);
+      color: #dc2626;
     }
 
     /* GAME OVER OVERLAY */
@@ -144,7 +173,7 @@
       top:0; left:0;
       width:100vw;
       height:100vh;
-      background:rgba(0,0,0,0.75);
+      background:rgba(15, 23, 42, 0.9);
       display:none;
       flex-direction:column;
       justify-content:center;
@@ -154,32 +183,27 @@
     }
 
     #gameover-text {
-      font-size:60px;
+      font-size:3rem;
       font-weight:900;
       color:#facc15;
-      text-shadow:0 0 20px black;
+      text-shadow:0 0 30px rgba(250, 204, 21, 0.5);
       animation:pulse 1s infinite alternate;
     }
 
-    @keyframes fadeIn {
-      from { opacity:0; }
-      to { opacity:1; }
-    }
-
-    @keyframes pulse {
-      from { transform:scale(0.9); opacity:.7; }
-      to   { transform:scale(1.1); opacity:1; }
-    }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes pulse { from { transform:scale(0.95); opacity:.8; } to { transform:scale(1.05); opacity:1; } }
 
     #btnRestart {
       margin-top:30px;
-      padding:12px 20px;
-      font-size:20px;
-      border-radius:8px;
+      padding:16px 32px;
+      font-size:1.2rem;
+      border-radius:12px;
       background:#2563eb;
       color:white;
       border:none;
       cursor:pointer;
+      font-weight: bold;
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
     }
   </style>
 </head>
@@ -188,18 +212,18 @@
   <div class="wrap">
 
     <header>
-      <h1 style="margin:0;">Word-Link (Pastel 3D Edition)</h1>
-      <div>
-        <button id="btnShuffle">Shuffle</button>
-        <button id="btnNew">New Game</button>
+      <h1>Word-Link 3D</h1>
+      <div id="header-btns">
+        <button id="btnShuffle">Mix</button>
+        <button id="btnNew">Reset</button>
       </div>
     </header>
 
-    <div id="category-menu" style="text-align:center; margin:20px 0;">
-      <h2>Select a Category</h2>
-      <button class="category-btn" data-cat="animal">Animals</button>
-      <button class="category-btn" data-cat="plant">Plants</button>
-      <button class="category-btn" data-cat="jobs">Jobs & Places</button>
+    <div id="category-menu" style="text-align:center; margin: auto 0;">
+      <h2 style="color:#475569;">Select Category</h2>
+      <button class="category-btn" data-cat="animal">🐶 Animals</button>
+      <button class="category-btn" data-cat="plant">🌿 Plants</button>
+      <button class="category-btn" data-cat="jobs">👨‍⚕️ Jobs</button>
     </div>
 
     <div class="hud">
@@ -214,7 +238,7 @@
 
   <div id="gameover-overlay">
     <div id="gameover-text">GAME OVER</div>
-    <button id="btnRestart">RESTART</button>
+    <button id="btnRestart">TRY AGAIN</button>
   </div>
 
 
@@ -223,10 +247,11 @@
    TTS (유아용)
 ====================== */
 function speakWord(word){
+  if (!window.speechSynthesis) return;
   const u=new SpeechSynthesisUtterance(word);
   u.lang="en-US";
-  u.rate=0.65;
-  u.pitch=1.0;
+  u.rate=0.8; 
+  u.pitch=1.1;
   speechSynthesis.speak(u);
 }
 
@@ -238,18 +263,12 @@ const ROWS=10, COLS=8, MIN_WORD=3, MAX_WORD=6;
 
 /* 🎨 랜덤 파스텔 8종 */
 const COLORS=[
-  "#CDE9FF", // bright pastel blue (W아이콘 느낌)
-  "#FFE4E4", // pastel pink
-  "#FFF4C7", // pastel yellow
-  "#DFFFE3", // pastel mint
-  "#EADFFF", // pastel lilac
-  "#FFE8D6", // pastel peach
-  "#E4F1FF", // soft sky blue
-  "#FFFBE6"  // cream
+  "#CDE9FF", "#FFE4E4", "#FFF4C7", "#DFFFE3", 
+  "#EADFFF", "#FFE8D6", "#E4F1FF", "#FFFBE6"
 ];
 
 const CATEGORY_WORDS={
-  animal:["CAT","DOG","LION","TIGER","BEAR","FROG","BIRD","FISH","COW","PIG","FOX","DEER","BEE","DUCK"],
+  animal:["CAT","DOG","LION","TIGER","BEAR","FROG","BIRD","FISH","COW","PIG","FOX","DEER","BEE","DUCK","WOLF"],
   plant:["TREE","LEAF","ROSE","GRASS","SEED","FLOWER","ROOT","MOSS","BAMBOO","OAK","PINE","LILY"],
   jobs:["DOCTOR","NURSE","TEACHER","PILOT","CHEF","FARMER","POLICE","DRIVER","ARTIST","BAKER","CLERK","GUIDE"]
 };
@@ -285,9 +304,7 @@ function randLetter(){
   if(LETTER_BAG.length)
     return LETTER_BAG[Math.floor(Math.random()*LETTER_BAG.length)];
 
-  const bag="EEEEEEAAA AAI IIOOOUU"+
-            "NNNRRRTTTLLSS"+
-            "DGGBCMPFHVWYKJXQZ";
+  const bag="EEEEEEAAA AAI IIOOOUU"+"NNNRRRTTTLLSS"+"DGGBCMPFHVWYKJXQZ";
   const letters=bag.replace(/\s/g,"");
   return letters[Math.floor(Math.random()*letters.length)];
 }
@@ -326,55 +343,48 @@ function bindEvents(){
   document.getElementById("btnShuffle").onclick=shuffleBoard;
 
   document.getElementById("btnNew").onclick=()=>{
-    score=0; updateScore();
-    moves=10; updateMoves();
-    firstSel=null;
-
-    grid=Array.from({length:ROWS},()=>Array(COLS).fill(""));
-    colorGrid=Array.from({length:ROWS},()=>Array(COLS).fill(""));
-    renderAll();
-
+    resetGame();
     document.getElementById("category-menu").style.display="block";
-    document.getElementById("gameover-overlay").style.display="none";
     setMsg("카테고리를 먼저 선택하세요.");
   };
 
   document.getElementById("btnRestart").onclick=()=>{
     document.getElementById("gameover-overlay").style.display="none";
+    resetGame();
     document.getElementById("category-menu").style.display="block";
-
-    score=0; updateScore();
-    moves=10; updateMoves();
-    firstSel=null;
-
-    grid=Array.from({length:ROWS},()=>Array(COLS).fill(""));
-    colorGrid=Array.from({length:ROWS},()=>Array(COLS).fill(""));
-    renderAll();
-
     setMsg("카테고리를 선택해주세요.");
   };
 
   document.querySelectorAll(".category-btn").forEach(btn=>{
     btn.addEventListener("click",()=>{
       const cat=btn.dataset.cat;
-
       DICTIONARY=new Set(CATEGORY_WORDS[cat]);
       LETTER_BAG=buildLetterBag(CATEGORY_WORDS[cat]);
       elDict.textContent=DICTIONARY.size;
 
       document.getElementById("category-menu").style.display="none";
-
-      score=0; updateScore();
-      moves=10; updateMoves();
-
-      setupBoard();
-      renderAll();
-
-      setMsg(`${cat} category loaded (${DICTIONARY.size} words).`);
+      startGame();
     });
   });
 
   elBoard.addEventListener("click",onClickTile);
+}
+
+function resetGame() {
+  score=0; updateScore();
+  moves=10; updateMoves();
+  firstSel=null;
+  grid=Array.from({length:ROWS},()=>Array(COLS).fill(""));
+  colorGrid=Array.from({length:ROWS},()=>Array(COLS).fill(""));
+  renderAll();
+}
+
+function startGame() {
+  score=0; updateScore();
+  moves=10; updateMoves();
+  setupBoard();
+  renderAll();
+  setMsg(`Game Started! (${DICTIONARY.size} words)`);
 }
 
 /* TILE INTERACTIONS */
@@ -414,7 +424,13 @@ async function onClickTile(e){
 
   if(moves<=0){
     renderAll();
-    gameOver();
+    // 마지막 수에서 매칭이 있으면 살려줌 (체크)
+    const marks = findMatches();
+    if(marks.size > 0) {
+       await resolveMatchesCascade();
+    } else {
+       gameOver();
+    }
     return;
   }
 
@@ -438,7 +454,7 @@ function swap([r1,c1],[r2,c2]){
 
 /* GAME OVER */
 function gameOver(){
-  setMsg("Game Over — No moves left!");
+  setMsg("Game Over!");
   document.getElementById("gameover-overlay").style.display="flex";
 }
 
@@ -466,15 +482,10 @@ async function resolveMatchesCascade(){
 
     if(lastWord) speakWord(lastWord);
 
-    moves+=10;
+    moves+=2; // 보너스 무브 (조절 가능)
     updateMoves();
 
-    setMsg(lastWord?
-      `Cleared (${total}). ex: ${lastWord} — +10 moves` :
-      `Cleared ${total} — +10 moves`
-    );
-  } else {
-    setMsg("No match");
+    setMsg(lastWord? `Found: ${lastWord} (+2 moves)` : `Cleared ${total}`);
   }
 }
 
@@ -578,11 +589,13 @@ function refill(){
   }
 }
 
+// ♻️ 수정된 셔플 함수 (색깔도 같이 섞이도록 수정됨)
 function shuffleBoard(){
   const arr=[];
   for(let r=0;r<ROWS;r++)
     for(let c=0;c<COLS;c++)
-      arr.push(grid[r][c]);
+      // 글자와 색깔을 묶어서 보관
+      arr.push({ char: grid[r][c], color: colorGrid[r][c] });
 
   for(let i=arr.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -591,15 +604,34 @@ function shuffleBoard(){
 
   let k=0;
   for(let r=0;r<ROWS;r++)
-    for(let c=0;c<COLS;c++)
-      grid[r][c]=arr[k++];
+    for(let c=0;c<COLS;c++) {
+      // 다시 풀어서 대입
+      grid[r][c] = arr[k].char;
+      colorGrid[r][c] = arr[k].color;
+      k++;
+    }
 
   renderAll();
-  setMsg("Shuffled");
+  setMsg("Shuffled!");
 }
 
 </script>
 
+<script>
+  const canSW = 'serviceWorker' in navigator &&
+    (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+  if (canSW) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+      });
+    }).catch(console.error);
+  }
+</script>
+
 </body>
 </html>
-
