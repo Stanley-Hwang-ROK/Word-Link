@@ -3,15 +3,38 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Word-Link Puzzle — Pastel Edition</title>
-  <meta name="theme-color" content="#0f172a">
+  <title>Word-Link Puzzle — Pastel 3D Edition</title>
+  <meta name="theme-color" content="#f5f7fa">
 
   <style>
-    :root { --bg:#f5f7fa; --panel:#ffffff; --text:#111; }
-    body { margin:0; font-family: system-ui; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
-    .wrap { margin:auto; width:min(95vw, 900px); }
-    header { display:flex; justify-content:space-between; align-items:center; padding:12px 0; }
+    :root {
+      --bg:#f5f7fa;
+      --panel:#ffffff;
+      --text:#111;
+    }
 
+    body {
+      margin:0;
+      font-family: system-ui;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+    }
+
+    .wrap {
+      margin:auto;
+      width:min(95vw, 900px);
+    }
+
+    header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 0;
+    }
+
+    /* BOARD GRID */
     .board {
       display:grid;
       gap:6px;
@@ -20,28 +43,65 @@
       justify-content:center;
     }
 
+    /* 🎨 3D 파스텔 뉴모피즘 타일 */
     .tile {
       width:48px;
       height:48px;
       display:grid;
       place-items:center;
-      border-radius:8px;
-      background:#eee;
-      font-size:20px;
+
+      border-radius:14px;
+
+      /* 배경은 var(--tileColor)로 받아옴 */
+      background: var(--tileColor);
+      background: linear-gradient(
+        145deg,
+        rgba(255,255,255,0.9),
+        rgba(0,0,0,0.08)
+      );
+
+      font-size:22px;
       font-weight:900;
-      color:#000; /* 🔥 검정색 글자 */
+      color:#1a1a1a;
+
       user-select:none;
-      border:1px solid #d0d0d0;
-      transition:transform .08s ease;
-    }
-    .tile.sel { outline:2px solid #2563eb; transform:scale(1.05); }
-    .tile.match {
-      background:#ffe680 !important;
-      transform:scale(1.2);
-      transition:all .3s ease;
+      border:1px solid rgba(255,255,255,0.6);
+
+      box-shadow:
+        inset -3px -3px 6px rgba(255,255,255,0.8),
+        inset 3px 3px 6px rgba(0,0,0,0.12),
+        3px 3px 6px rgba(0,0,0,0.12),
+        -2px -2px 4px rgba(255,255,255,0.7);
+
+      transition:transform .12s ease, box-shadow .12s ease;
     }
 
-    .hud { display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; }
+    /* 선택 효과 */
+    .tile.sel {
+      transform:scale(1.06);
+      box-shadow:
+        inset -2px -2px 4px rgba(255,255,255,0.9),
+        inset 4px 4px 6px rgba(0,0,0,0.18),
+        4px 4px 8px rgba(0,0,0,0.15);
+    }
+
+    /* 매칭된 타일 (강조된 3D) */
+    .tile.match {
+      transform:scale(1.14);
+      background: linear-gradient(145deg, #FFF4C7, #FFD76A);
+      box-shadow:
+        inset -2px -2px 5px rgba(255,255,255,0.9),
+        inset 4px 4px 7px rgba(0,0,0,0.2),
+        4px 4px 9px rgba(0,0,0,0.18);
+    }
+
+    .hud {
+      display:flex;
+      gap:10px;
+      margin:10px 0;
+      flex-wrap:wrap;
+    }
+
     .badge {
       background:#ffffff;
       padding:6px 12px;
@@ -49,7 +109,12 @@
       font-weight:700;
       border:1px solid #dcdcdc;
     }
-    .msg { min-height:20px; opacity:.9; margin-top:6px; }
+
+    .msg {
+      min-height:20px;
+      opacity:.9;
+      margin-top:6px;
+    }
 
     .category-btn {
       padding:10px 16px;
@@ -62,14 +127,22 @@
       cursor:pointer;
     }
 
-    #moves { color:#d97706; font-weight:900; transition:transform .15s ease; }
-    #moves.bump { transform:scale(1.25); }
+    #moves {
+      color:#d97706;
+      font-weight:900;
+      transition:transform .15s ease;
+    }
+
+    #moves.bump {
+      transform:scale(1.25);
+    }
 
     /* GAME OVER OVERLAY */
     #gameover-overlay {
       position:fixed;
       top:0; left:0;
-      width:100vw; height:100vh;
+      width:100vw;
+      height:100vh;
       background:rgba(0,0,0,0.75);
       display:none;
       flex-direction:column;
@@ -78,6 +151,7 @@
       z-index:9999;
       animation: fadeIn .8s ease forwards;
     }
+
     #gameover-text {
       font-size:60px;
       font-weight:900;
@@ -85,7 +159,12 @@
       text-shadow:0 0 20px black;
       animation:pulse 1s infinite alternate;
     }
-    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+    @keyframes fadeIn {
+      from { opacity:0; }
+      to { opacity:1; }
+    }
+
     @keyframes pulse {
       from { transform:scale(0.9); opacity:.7; }
       to   { transform:scale(1.1); opacity:1; }
@@ -108,7 +187,7 @@
   <div class="wrap">
 
     <header>
-      <h1 style="margin:0;">Word-Link (Pastel Edition)</h1>
+      <h1 style="margin:0;">Word-Link (Pastel 3D Edition)</h1>
       <div>
         <button id="btnShuffle">Shuffle</button>
         <button id="btnNew">New Game</button>
@@ -132,7 +211,6 @@
     <div id="msg" class="msg">카테고리를 먼저 선택하세요.</div>
   </div>
 
-  <!-- GAME OVER LAYER -->
   <div id="gameover-overlay">
     <div id="gameover-text">GAME OVER</div>
     <button id="btnRestart">RESTART</button>
@@ -157,16 +235,16 @@ function speakWord(word){
 
 const ROWS=10, COLS=8, MIN_WORD=3, MAX_WORD=6;
 
-/* 🔥 파스텔 팔레트 적용 */
+/* 🎨 랜덤 파스텔 8종 */
 const COLORS=[
-  "#F8D7DA", // Pastel Pink
-  "#FFF3CD", // Pastel Yellow
-  "#D1F2EB", // Pastel Mint
-  "#D6EAF8", // Pastel Blue
-  "#E8DAEF", // Pastel Purple
-  "#FADBD8", // Peach
-  "#FCF3CF", // Light Gold
-  "#D4E6F1"  // Soft Sky Blue
+  "#CDE9FF", // bright pastel blue (W아이콘 느낌)
+  "#FFE4E4", // pastel pink
+  "#FFF4C7", // pastel yellow
+  "#DFFFE3", // pastel mint
+  "#EADFFF", // pastel lilac
+  "#FFE8D6", // pastel peach
+  "#E4F1FF", // soft sky blue
+  "#FFFBE6"  // cream
 ];
 
 const CATEGORY_WORDS={
@@ -209,7 +287,8 @@ function randLetter(){
   const bag="EEEEEEAAA AAI IIOOOUU"+
             "NNNRRRTTTLLSS"+
             "DGGBCMPFHVWYKJXQZ";
-  return bag.replace(/\s/g,"")[Math.floor(Math.random()*bag.length)];
+  const letters=bag.replace(/\s/g,"");
+  return letters[Math.floor(Math.random()*letters.length)];
 }
 
 function setupBoard(){
@@ -230,7 +309,10 @@ function renderAll(){
       d.dataset.r=r;
       d.dataset.c=c;
       d.textContent=grid[r][c];
-      d.style.background=colorGrid[r][c];
+
+      /* 🔥 뉴모피즘 색상 주입 */
+      d.style.setProperty("--tileColor", colorGrid[r][c]);
+
       elBoard.appendChild(d);
     }
   }
@@ -316,10 +398,6 @@ async function onClickTile(e){
   }
 
   if(!isNeighbor(firstSel.r,firstSel.c,r,c)){
-    highlight(firstSel.r,b,false);
-  }
-
-  if(!isNeighbor(firstSel.r,firstSel.c,r,c)){
     highlight(firstSel.r,firstSel.c,false);
     firstSel={r,c};
     highlight(r,c,true);
@@ -347,9 +425,11 @@ function highlight(r,c,on){
   const el=document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
   if(el) el.classList.toggle("sel",on);
 }
+
 function isNeighbor(r1,c1,r2,c2){
   return Math.abs(r1-r2)+Math.abs(c1-c2)==1;
 }
+
 function swap([r1,c1],[r2,c2]){
   [grid[r1][c1],grid[r2][c2]]=[grid[r2][c2],grid[r1][c1]];
   [colorGrid[r1][c1],colorGrid[r2][c2]]=[colorGrid[r2][c2],colorGrid[r1][c1]];
@@ -361,7 +441,7 @@ function gameOver(){
   document.getElementById("gameover-overlay").style.display="flex";
 }
 
-/* MATCHING */
+/* MATCHING LOGIC */
 async function resolveMatchesCascade(){
   let total=0;
   let lastWord="";
@@ -420,9 +500,9 @@ function findMatches(){
       let r2=r;
       while(r2+1<ROWS && grid[r2+1][c]) r2++;
       if(r2-r+1>=MIN_WORD){
-        let letters="";
-        for(let i=r;i<=r2;i++) letters+=grid[i][c];
-        markStrip(r,c,1,0,letters,marks,w=>example||=w);
+        let str="";
+        for(let i=r;i<=r2;i++) str+=grid[i][c];
+        markStrip(r,c,1,0,str,marks,w=>example||=w);
       }
       r=r2+1;
     }
