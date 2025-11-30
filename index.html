@@ -57,6 +57,14 @@
    Word-Link (Click-to-Swap)
    with external dictionary
    ========================= */
+  let LETTER_BAG = ""; // 현재 카테고리의 글자 가방
+
+function buildLetterBag(wordList) {
+  let bag = "";
+  for (const w of wordList) bag += w;  // 단어들을 전부 합침
+  return bag; // 예: CATDOGBEE
+}
+
 const ROWS = 10, COLS = 8, MIN_WORD = 3, MAX_WORD = 6;
 const COLORS = [
   "#f87171", // 빨강
@@ -115,21 +123,19 @@ loadDictionary('words.txt?v=6')
 
 // ---- 함수들 ----
 
-function randLetter(){
-  // 모음 비중을 살짝 높인 가중치 가방
-  const bag = "EEEEEEAAA AAI IIOOOUU"  // 모음이 더 많이 들어감
-             + "NNNRRRTTTLLSS"        // 빈도 높은 자음
+function randLetter() {
+  // 카테고리 선택 후 LETTER_BAG이 설정됨
+  if (LETTER_BAG && LETTER_BAG.length > 0) {
+    const idx = Math.floor(Math.random() * LETTER_BAG.length);
+    return LETTER_BAG[idx];
+  }
+
+  // Fallback (카테고리 선택 전)
+  const bag = "EEEEEEAAA AAI IIOOOUU"  
+             + "NNNRRRTTTLLSS"
              + "DGG" + "BCMP" + "FHVWY" + "K" + "JX" + "QZ";
   const letters = bag.replace(/\s/g, '');
-  return letters[Math.floor(Math.random()*letters.length)];
-}
-function setupBoard() {
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      grid[r][c] = randLetter();
-      colorGrid[r][c] = COLORS[Math.floor(Math.random() * COLORS.length)];
-    }
-  }
+  return letters[Math.floor(Math.random() * letters.length)];
 }
 
 
@@ -353,6 +359,30 @@ async function loadDictionary(url){
   DICTIONARY = new Set(list);
   return DICTIONARY.size;
 }
+  document.querySelectorAll(".category-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const cat = btn.dataset.cat;
+
+    // 1) 단어 사전 세팅
+    const words = CATEGORY_WORDS[cat];
+    DICTIONARY = new Set(words);
+
+    // 2) LETTER_BAG 세팅 (단어 전체 글자)
+    LETTER_BAG = buildLetterBag(words);
+
+    // 3) HUD 갱신
+    if (elDictCount) elDictCount.textContent = DICTIONARY.size;
+
+    // 4) 메뉴 숨기기 & 새 보드 생성
+    document.getElementById("category-menu").style.display = "none";
+    score = 0; updateScore();
+    setupBoard();  // ← 이제 randLetter()가 동작 달라짐
+    renderAll();
+
+    setMsg(`${cat} category loaded (${DICTIONARY.size} words).`);
+  });
+});
+
 </script>
 
 
@@ -376,6 +406,7 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
 
 
