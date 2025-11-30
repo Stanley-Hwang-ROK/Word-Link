@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Word-Link Puzzle — Pastel 3D Edition</title>
   
-  <link rel="manifest" href="manifest.json?v=7">
+  <link rel="manifest" href="manifest.json?v=10">
   <link rel="apple-touch-icon" href="ICON-192.png">
   <meta name="theme-color" content="#f5f7fa">
 
@@ -41,7 +41,7 @@
       padding:12px 0;
     }
     
-    h1 { font-size: 1.2rem; }
+    h1 { font-size: 1.2rem; margin: 0; }
 
     /* BOARD GRID */
     .board {
@@ -244,14 +244,41 @@
 
 <script>
 /* ======================
-   TTS (유아용)
+   TTS (고품질 음성 선택 버전)
 ====================== */
+let voices = [];
+
+function loadVoices() {
+  voices = window.speechSynthesis.getVoices();
+}
+
+// 목소리 목록 로드 (크롬/안드로이드 대응)
+if (window.speechSynthesis) {
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  loadVoices();
+}
+
 function speakWord(word){
   if (!window.speechSynthesis) return;
-  const u=new SpeechSynthesisUtterance(word);
-  u.lang="en-US";
-  u.rate=0.8; 
-  u.pitch=1.1;
+  if (voices.length === 0) loadVoices();
+
+  const u = new SpeechSynthesisUtterance(word);
+  u.lang = "en-US";
+  u.rate = 0.85; 
+  u.pitch = 1.0;
+
+  // 우선순위: 구글(안드) > 사만다(iOS) > 아론(iOS) > 기본 영미권
+  const targetVoice = voices.find(v => v.name.includes("Google US English")) || 
+                      voices.find(v => v.name.includes("Samantha")) || 
+                      voices.find(v => v.name.includes("Aaron")) ||
+                      voices.find(v => v.lang === "en-US" && !v.name.includes("Microsoft")); // MS목소리는 가끔 로봇같아서 후순위
+
+  if (targetVoice) {
+    u.voice = targetVoice;
+  }
+
   speechSynthesis.speak(u);
 }
 
@@ -424,7 +451,7 @@ async function onClickTile(e){
 
   if(moves<=0){
     renderAll();
-    // 마지막 수에서 매칭이 있으면 살려줌 (체크)
+    // 마지막 수에서 매칭이 있으면 살려줌
     const marks = findMatches();
     if(marks.size > 0) {
        await resolveMatchesCascade();
@@ -482,7 +509,7 @@ async function resolveMatchesCascade(){
 
     if(lastWord) speakWord(lastWord);
 
-    moves+=2; // 보너스 무브 (조절 가능)
+    moves+=2; // 보너스 무브
     updateMoves();
 
     setMsg(lastWord? `Found: ${lastWord} (+2 moves)` : `Cleared ${total}`);
@@ -589,12 +616,11 @@ function refill(){
   }
 }
 
-// ♻️ 수정된 셔플 함수 (색깔도 같이 섞이도록 수정됨)
+// ♻️ 수정된 셔플 함수 (색깔도 같이 섞임)
 function shuffleBoard(){
   const arr=[];
   for(let r=0;r<ROWS;r++)
     for(let c=0;c<COLS;c++)
-      // 글자와 색깔을 묶어서 보관
       arr.push({ char: grid[r][c], color: colorGrid[r][c] });
 
   for(let i=arr.length-1;i>0;i--){
@@ -605,7 +631,6 @@ function shuffleBoard(){
   let k=0;
   for(let r=0;r<ROWS;r++)
     for(let c=0;c<COLS;c++) {
-      // 다시 풀어서 대입
       grid[r][c] = arr[k].char;
       colorGrid[r][c] = arr[k].color;
       k++;
@@ -614,7 +639,6 @@ function shuffleBoard(){
   renderAll();
   setMsg("Shuffled!");
 }
-
 </script>
 
 <script>
