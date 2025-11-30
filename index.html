@@ -29,6 +29,16 @@
   transform:scale(1.2);
   transition:all .3s ease;
 }
+.category-btn {
+  padding: 10px 16px;
+  font-size: 16px;
+  margin: 6px;
+  border-radius: 6px;
+  background:#2563eb;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
 
   </style>
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -37,6 +47,13 @@
 <body>
   <div class="wrap">
     <header>
+      <div id="category-menu" style="text-align:center; margin:20px 0;">
+  <h2 style="margin-bottom:8px;">Select a Category</h2>
+  <button class="category-btn" data-cat="animal">Animals</button>
+  <button class="category-btn" data-cat="plant">Plants</button>
+  <button class="category-btn" data-cat="jobs">Jobs & Places</button>
+</div>
+
       <h1 style="margin:0;font-size:20px">Word‑Link (Click‑to‑Swap)</h1>
       <div>
         <button id="btnHint">Hint</button>
@@ -382,6 +399,30 @@ async function loadDictionary(url){
     setMsg(`${cat} category loaded (${DICTIONARY.size} words).`);
   });
 });
+  document.querySelectorAll(".category-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const cat = btn.dataset.cat;
+
+    // 1) 단어 사전 변경
+    const words = CATEGORY_WORDS[cat];
+    DICTIONARY = new Set(words);
+
+    // 2) LETTER_BAG 갱신
+    LETTER_BAG = buildLetterBag(words);
+
+    // 3) HUD 업데이트
+    if (elDictCount) elDictCount.textContent = DICTIONARY.size;
+
+    // 4) 게임 보드 새로 생성
+    document.getElementById("category-menu").style.display = "none";
+    score = 0; updateScore();
+    setupBoard();
+    renderAll();
+
+    setMsg(`${cat} category loaded (${DICTIONARY.size} words).`);
+  });
+});
+
 
 </script>
 
@@ -406,6 +447,7 @@ async function loadDictionary(url){
 
 </body>
 </html>
+
 
 
 
