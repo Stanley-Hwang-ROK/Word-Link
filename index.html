@@ -128,6 +128,21 @@
 /* ===============================
    Word-Link Puzzle (Category + Moves)
    =============================== */
+  function speakWord(word) {
+  const u = new SpeechSynthesisUtterance(word);
+  u.lang = "en-US";
+  u.rate = 0.65;  // 유아용 느린 발음
+  u.pitch = 1.0;
+  speechSynthesis.speak(u);
+}
+function speakWord(word) {
+  const u = new SpeechSynthesisUtterance(word);
+  u.lang = "en-US";   // 영어
+  u.rate = 0.65;      // 속도 느림 (유아용)
+  u.pitch = 1.0;      // 피치 보통
+  speechSynthesis.speak(u);
+}
+
 
 const ROWS = 10, COLS = 8, MIN_WORD = 3, MAX_WORD = 6;
 const COLORS = ["#f87171","#fbbf24","#34d399","#60a5fa","#a78bfa","#f472b6","#facc15","#38bdf8"];
@@ -338,6 +353,9 @@ async function resolveMatchesCascade(){
     score+=total*5;
     updateScore();
 
+    // 🔊 TTS 자동 발음 (유아용)
+    if (lastWord) speakWord(lastWord);
+
     moves+=10;
     updateMoves();
 
@@ -349,6 +367,7 @@ async function resolveMatchesCascade(){
     setMsg("No match");
   }
 }
+
 
 function findMatches(){
   const marks=new Set();
@@ -477,3 +496,4 @@ function shuffleBoard(){
 
 </body>
 </html>
+
