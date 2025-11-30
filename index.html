@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Word-Link Puzzle — Pastel 3D Edition</title>
   
-  <link rel="manifest" href="manifest.json?v=10">
+  <link rel="manifest" href="manifest.json?v=11">
   <link rel="apple-touch-icon" href="ICON-192.png">
   <meta name="theme-color" content="#f5f7fa">
 
@@ -13,59 +13,35 @@
     :root { --bg:#f5f7fa; --panel:#ffffff; --text:#111; }
 
     body {
-      margin:0;
-      font-family: system-ui, -apple-system, sans-serif;
-      background:var(--bg);
-      color:var(--text);
-      min-height:100vh;
-      display:flex;
-      overscroll-behavior: none;
-      user-select: none;
+      margin:0; font-family: system-ui, -apple-system, sans-serif;
+      background:var(--bg); color:var(--text);
+      min-height:100vh; display:flex;
+      overscroll-behavior: none; user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .wrap {
-      margin:auto;
-      width:min(95vw, 500px);
-      padding: 0 10px;
-    }
+    .wrap { margin:auto; width:min(95vw, 500px); padding: 0 10px; }
 
-    header {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:12px 0;
-    }
-    
+    header { display:flex; justify-content:space-between; align-items:center; padding:12px 0; }
     h1 { font-size: 1.2rem; margin: 0; }
 
     .board {
-      display:grid;
-      gap:6px;
-      padding:10px;
+      display:grid; gap:6px; padding:10px;
       grid-template-columns:repeat(8, 1fr);
       justify-content:center;
-      background: #eef2f6;
-      border-radius: 16px;
+      background: #eef2f6; border-radius: 16px;
       box-shadow: inset 4px 4px 8px rgba(0,0,0,0.05), inset -4px -4px 8px rgba(255,255,255,0.8);
     }
 
     .tile {
-      width:100%;
-      aspect-ratio: 1/1;
-      display:grid;
-      place-items:center;
+      width:100%; aspect-ratio: 1/1; display:grid; place-items:center;
       border-radius:12px;
       background: linear-gradient(145deg, rgba(255,255,255,0.6), rgba(0,0,0,0.05)), var(--tileColor);
-      font-size: clamp(12px, 4vw, 22px);
-      font-weight:900;
-      color:#1a1a1a;
-      user-select:none;
-      border:1px solid rgba(255,255,255,0.4);
+      font-size: clamp(12px, 4vw, 22px); font-weight:900; color:#1a1a1a;
+      user-select:none; border:1px solid rgba(255,255,255,0.4);
       box-shadow: 3px 3px 6px rgba(166, 180, 200, 0.4), -3px -3px 6px rgba(255,255,255, 0.8);
       transition:transform .12s ease, box-shadow .12s ease;
-      cursor: pointer;
-      touch-action: manipulation;
+      cursor: pointer; touch-action: manipulation;
     }
 
     .tile.sel {
@@ -87,7 +63,6 @@
       font-weight:700; font-size: 0.9rem; border:1px solid #e2e8f0;
       box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
     }
-
     .msg { text-align: center; min-height:24px; opacity:.8; margin-top:10px; font-size: 0.9rem; }
 
     .category-btn {
@@ -166,24 +141,36 @@
 ====================== */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+// 1. 타일 스왑 소리 (뽁!)
 function playPopSound() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(500, audioCtx.currentTime); 
+  osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+}
 
-  const oscillator = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
+// 2. 단어 매칭 성공 소리 (딩동! - 맑은 소리)
+function playMatchSound() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  osc.type = 'sine'; 
+  // 높은 음에서 살짝 떨어지며 여운 (성공 느낌)
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+  osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.6); 
 
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(500, audioCtx.currentTime); // 시작음
-  oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1); // 끝음 (올라가는 소리)
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
 
-  gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-
-  oscillator.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-
-  oscillator.start();
-  oscillator.stop(audioCtx.currentTime + 0.1);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.6);
 }
 
 /* ======================
@@ -199,11 +186,8 @@ if (window.speechSynthesis) {
 function speakWord(word){
   if (!window.speechSynthesis) return;
   if (voices.length === 0) loadVoices();
-
   const u = new SpeechSynthesisUtterance(word);
-  u.lang = "en-US";
-  u.rate = 0.85; u.pitch = 1.0;
-
+  u.lang = "en-US"; u.rate = 0.85; u.pitch = 1.0;
   const targetVoice = voices.find(v => v.name.includes("Google US English")) || 
                       voices.find(v => v.name.includes("Samantha")) || 
                       voices.find(v => v.name.includes("Aaron")) ||
@@ -294,9 +278,7 @@ function bindEvents(){
   };
   document.querySelectorAll(".category-btn").forEach(btn=>{
     btn.addEventListener("click",()=>{
-      // 게임 시작 시 오디오 컨텍스트 깨우기 (모바일 대응)
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      
       const cat=btn.dataset.cat;
       DICTIONARY=new Set(CATEGORY_WORDS[cat]);
       LETTER_BAG=buildLetterBag(CATEGORY_WORDS[cat]);
@@ -324,8 +306,6 @@ async function onClickTile(e){
   if(moves<=0){ gameOver(); return; }
   const t=e.target.closest(".tile");
   if(!t) return;
-
-  // 오디오 컨텍스트 깨우기 (안전장치)
   if (audioCtx.state === 'suspended') audioCtx.resume();
 
   const r=+t.dataset.r, c=+t.dataset.c;
@@ -340,7 +320,7 @@ async function onClickTile(e){
     firstSel={r,c}; highlight(r,c,true); return;
   }
 
-  // 🔊 스왑 실행 및 소리 재생!
+  // 🔊 스왑 소리
   swap([firstSel.r,firstSel.c],[r,c]);
   playPopSound(); 
 
@@ -435,6 +415,10 @@ function markStrip(r0,c0,dr,dc,str,marks,onExample){
 }
 async function clearMarked(marks){
   const exampleWord=marks.exampleWord||"";
+  
+  // 🔊 여기서 성공 소리 재생! (시각 효과 시작과 동시에)
+  playMatchSound();
+
   for(const pos of marks){
     const[r,c]=pos.split(",").map(Number);
     const el=document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
